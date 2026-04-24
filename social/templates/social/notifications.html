@@ -1,0 +1,22 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<h4 class="mb-4">Friend Requests</h4>
+
+{% for req in requests %}
+<div class="card mb-3">
+  <div class="card-body d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;">
+        {{ req.from_user.username|first|upper }}
+      </div>
+      <strong>{{ req.from_user.username }}</strong> wants to be your friend
+    </div>
+    <a href="{% url 'accept_request' req.pk %}" class="btn btn-sm btn-success">Accept</a>
+  </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No friend requests yet.</div>
+{% endfor %}
+
+{% endblock %}

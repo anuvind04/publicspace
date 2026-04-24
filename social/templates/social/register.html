@@ -1,0 +1,23 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="mb-4 text-center">Create Account</h4>
+    <form method="POST">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="mb-3">
+        <label class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <div class="text-danger">{{ field.errors }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-success w-100">Register</button>
+      <p class="text-center mt-3">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

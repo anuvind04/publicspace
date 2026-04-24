@@ -1,0 +1,90 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+
+<!-- Post limit notice -->
+{% if not can_post %}
+<div class="alert alert-warning">
+  {{ post_message }}
+</div>
+{% endif %}
+
+<!-- Friend count -->
+<div class="alert alert-info">
+  You have <strong>{{ friend_count }}</strong> friend{{ friend_count|pluralize }}.
+  {% if friend_count >= 10 %}You can post unlimited times today! 🎉
+  {% elif friend_count > 0 %}You can post <strong>{{ friend_count }}</strong> time{{ friend_count|pluralize }} today.
+  {% endif %}
+</div>
+
+<!-- Posts -->
+{% for post in posts %}
+<div class="card mb-4">
+  <div class="card-body">
+
+    <!-- User info -->
+    <div class="d-flex align-items-center mb-3">
+      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:40px;height:40px;">
+        {{ post.user.username|first|upper }}
+      </div>
+      <div>
+        <strong>{{ post.user.username }}</strong>
+        <div class="text-muted small">{{ post.created_at|timesince }} ago</div>
+      </div>
+      {% if post.user == request.user %}
+      <form method="POST" action="{% url 'delete_post' post.pk %}" class="ms-auto">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Caption -->
+    {% if post.caption %}
+    <p class="mb-3">{{ post.caption }}</p>
+    {% endif %}
+
+    <!-- Image -->
+    {% if post.image %}
+    <img src="{{ post.image.url }}" class="post-image mb-3" alt="post image">
+    {% endif %}
+
+    <!-- Video -->
+    {% if post.video %}
+    <video controls class="w-100 mb-3" style="border-radius:8px;">
+      <source src="{{ post.video.url }}">
+    </video>
+    {% endif %}
+
+    <!-- Like & Comment counts -->
+    <div class="d-flex gap-3 mb-3">
+      <form method="POST" action="{% url 'like_post' post.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm {% if post.pk in liked_posts %}btn-danger{% else %}btn-outline-danger{% endif %}">
+          ❤️ {{ post.like_count }}
+        </button>
+      </form>
+      <span class="btn btn-sm btn-outline-secondary">💬 {{ post.comment_count }}</span>
+    </div>
+
+    <!-- Comments -->
+    {% for comment in post.comments.all %}
+    <div class="bg-light rounded p-2 mb-1 small">
+      <strong>{{ comment.user.username }}</strong> {{ comment.text }}
+    </div>
+    {% endfor %}
+
+    <!-- Add comment -->
+    <form method="POST" action="{% url 'add_comment' post.pk %}" class="mt-2 d-flex gap-2">
+      {% csrf_token %}
+      <input type="text" name="text" class="form-control form-control-sm" placeholder="Write a comment...">
+      <button type="submit" class="btn btn-sm btn-primary">Send</button>
+    </form>
+
+  </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No posts yet. Be the first to post!</div>
+{% endfor %}
+
+{% endblock %}

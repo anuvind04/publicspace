@@ -1,0 +1,26 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="mb-4">Create Post</h4>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Caption</label>
+        <textarea name="caption" class="form-control" rows="3" placeholder="What's on your mind?"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Photo (optional)</label>
+        <input type="file" name="image" class="form-control" accept="image/*">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Video (optional)</label>
+        <input type="file" name="video" class="form-control" accept="video/*">
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Post</button>
+      <a href="{% url 'feed' %}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
