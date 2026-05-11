@@ -6,6 +6,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('post/create/', views.create_post, name='create_post'),
     path('post/like/<int:pk>/', views.like_post, name='like_post'),
     path('post/comment/<int:pk>/', views.add_comment, name='add_comment'),
@@ -14,4 +15,5 @@ urlpatterns = [
     path('people/add/<int:pk>/', views.send_request, name='send_request'),
     path('friends/accept/<int:pk>/', views.accept_request, name='accept_request'),
     path('notifications/', views.notifications, name='notifications'),
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
 ]

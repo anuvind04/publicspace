@@ -1,23 +1,24 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
-<div class="card">
-  <div class="card-body">
-    <h4 class="mb-4 text-center">Login</h4>
-    <form method="POST">
-      {% csrf_token %}
-      {% for field in form %}
-      <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}
-          <div class="text-danger">{{ field.errors }}</div>
-        {% endif %}
-      </div>
-      {% endfor %}
-      <button type="submit" class="btn btn-primary w-100">Login</button>
-      <p class="text-center mt-3">Don't have an account? <a href="{% url 'register' %}">Register</a></p>
-    </form>
-  </div>
+<div class="card p-4">
+  <h4 class="mb-4 text-center">Login</h4>
+  <form method="POST">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="mb-3">
+      <label class="form-label">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}
+        <div class="text-danger small">{{ field.errors }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary w-100">Login</button>
+    <div class="text-center mt-3">
+      <a href="{% url 'forgot_password' %}" class="text-danger">Forgot Password?</a>
+    </div>
+  </form>
+  <p class="text-center mt-2">Don't have an account? <a href="{% url 'register' %}">Register</a></p>
 </div>
 {% endblock %}

@@ -4,8 +4,11 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import Post, Like, Comment, FriendRequest, Friendship
+from .models import Post, Like, Comment, FriendRequest, Friendship, UserProfile
 from django.db.models import Q
+import random
+import string
+
 
 # ── Helper: get friend count ──
 def get_friend_count(user):
@@ -30,8 +33,13 @@ def can_post(user):
 def register_view(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
+        phone = request.POST.get('phone')
+        email = request.POST.get('email')
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            user.email = email
+            user.save()
+            UserProfile.objects.create(user=user, phone=phone)
             login(request, user)
             return redirect('feed')
     else:
@@ -143,3 +151,42 @@ def accept_request(request, pk):
 def notifications(request):
     requests = FriendRequest.objects.filter(to_user=request.user)
     return render(request, 'social/notifications.html', {'requests': requests})
+# ── Password Generator (letters only) ──
+def generate_password(length=10):
+    characters = string.ascii_uppercase + string.ascii_lowercase
+    return ''.join(random.choice(characters) for _ in range(length))
+
+# ── Forgot Password ──
+def forgot_password(request):
+    error = None
+    if request.method == 'POST':
+        identifier = request.POST.get('identifier')
+        user = None
+        try:
+            user = User.objects.get(email=identifier)
+        except User.DoesNotExist:
+            try:
+                from .models import UserProfile
+                profile = UserProfile.objects.get(phone=identifier)
+                user = profile.user
+            except UserProfile.DoesNotExist:
+                error = "No account found with that email or phone number."
+
+        if user:
+            from .models import UserProfile
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            today = timezone.now().date()
+            if profile.last_reset_request == today:
+                error = "You can use this option only once per day."
+            else:
+                new_password = generate_password()
+                user.set_password(new_password)
+                user.save()
+                profile.last_reset_request = today
+                profile.save()
+                return render(request, 'social/reset_success.html', {
+                    'new_password': new_password,
+                    'username': user.username,
+                })
+
+    return render(request, 'social/forgot_password.html', {'error': error})

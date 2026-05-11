@@ -51,3 +51,10 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.text[:30]}"
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=15, blank=True)
+    last_reset_request = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
