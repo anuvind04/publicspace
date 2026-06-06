@@ -1,0 +1,36 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card p-4">
+  <h4 class="mb-4">Apply for Internship</h4>
+
+  <div class="alert alert-info">
+    Current Plan: <strong>{{ subscription.plan|title }}</strong> |
+    Applications this month: <strong>{{ applications_this_month }}</strong> /
+    <strong>{% if subscription.plan == 'gold' %}Unlimited{% else %}{{ limit }}{% endif %}</strong>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger">
+    {{ error }}
+    <br>
+    <a href="{% url 'plans' %}" class="btn btn-primary btn-sm mt-2">Upgrade Plan</a>
+  </div>
+  {% else %}
+  <form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Company Name</label>
+      <input type="text" name="company" class="form-control" placeholder="Enter company name" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Role / Position</label>
+      <input type="text" name="role" class="form-control" placeholder="Enter role or position" required>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Submit Application</button>
+  </form>
+  {% endif %}
+
+  <a href="{% url 'my_applications' %}" class="btn btn-outline-primary w-100 mt-3">View My Applications</a>
+</div>
+{% endblock %}

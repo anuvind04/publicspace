@@ -1,0 +1,97 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<h3 class="mb-4 text-center">Subscription Plans</h3>
+<p class="text-center text-muted">Your current plan: <strong class="text-primary">{{ subscription.plan|title }}</strong> | Applications this month: <strong>{{ applications_this_month }}</strong></p>
+
+<div class="row g-4 mb-4">
+
+  <!-- Free -->
+  <div class="col-md-3">
+    <div class="card text-center h-100 {% if subscription.plan == 'free' %}border-primary{% endif %}">
+      <div class="card-body">
+        <h5 class="card-title">Free</h5>
+        <h2 class="text-success">₹0</h2>
+        <p class="text-muted">per month</p>
+        <ul class="list-unstyled">
+          <li>✅ 1 application/month</li>
+          <li>❌ Priority support</li>
+        </ul>
+        {% if subscription.plan == 'free' %}
+        <span class="badge bg-primary">Current Plan</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bronze -->
+  <div class="col-md-3">
+    <div class="card text-center h-100 {% if subscription.plan == 'bronze' %}border-warning{% endif %}">
+      <div class="card-body">
+        <h5 class="card-title">🥉 Bronze</h5>
+        <h2 class="text-warning">₹100</h2>
+        <p class="text-muted">per month</p>
+        <ul class="list-unstyled">
+          <li>✅ 3 applications/month</li>
+          <li>✅ Basic support</li>
+        </ul>
+        {% if subscription.plan == 'bronze' %}
+        <span class="badge bg-warning text-dark">Current Plan</span>
+        {% else %}
+        <a href="{% url 'create_order' 'bronze' %}" class="btn btn-warning w-100">Subscribe</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Silver -->
+  <div class="col-md-3">
+    <div class="card text-center h-100 {% if subscription.plan == 'silver' %}border-secondary{% endif %}">
+      <div class="card-body">
+        <h5 class="card-title">🥈 Silver</h5>
+        <h2 class="text-secondary">₹300</h2>
+        <p class="text-muted">per month</p>
+        <ul class="list-unstyled">
+          <li>✅ 5 applications/month</li>
+          <li>✅ Priority support</li>
+        </ul>
+        {% if subscription.plan == 'silver' %}
+        <span class="badge bg-secondary">Current Plan</span>
+        {% else %}
+        <a href="{% url 'create_order' 'silver' %}" class="btn btn-secondary w-100">Subscribe</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Gold -->
+  <div class="col-md-3">
+    <div class="card text-center h-100 {% if subscription.plan == 'gold' %}border-danger{% endif %}">
+      <div class="card-body">
+        <h5 class="card-title">🥇 Gold</h5>
+        <h2 class="text-danger">₹1000</h2>
+        <p class="text-muted">per month</p>
+        <ul class="list-unstyled">
+          <li>✅ Unlimited applications</li>
+          <li>✅ Premium support</li>
+        </ul>
+        {% if subscription.plan == 'gold' %}
+        <span class="badge bg-danger">Current Plan</span>
+        {% else %}
+        <a href="{% url 'create_order' 'gold' %}" class="btn btn-danger w-100">Subscribe</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="text-center">
+  <a href="{% url 'apply_internship' %}" class="btn btn-primary">Apply for Internship</a>
+  <a href="{% url 'my_applications' %}" class="btn btn-outline-primary ms-2">My Applications</a>
+</div>
+
+<div class="alert alert-info mt-4 text-center">
+  ⏰ Payments are only allowed between <strong>10:00 AM - 11:00 AM IST</strong>
+</div>
+{% endblock %}

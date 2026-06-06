@@ -1,0 +1,30 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<h4 class="mb-4">My Internship Applications</h4>
+
+{% if applications %}
+{% for app in applications %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1">{{ app.role }}</h5>
+        <p class="text-muted mb-0">🏢 {{ app.company }}</p>
+        <small class="text-muted">Applied: {{ app.applied_at|date:"d M Y, h:i A" }}</small>
+      </div>
+      <span class="badge bg-success">Applied ✓</span>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-info">
+  You haven't applied for any internships yet.
+  <a href="{% url 'apply_internship' %}">Apply now!</a>
+</div>
+{% endif %}
+
+<a href="{% url 'apply_internship' %}" class="btn btn-primary mt-2">Apply for Another</a>
+<a href="{% url 'plans' %}" class="btn btn-outline-primary mt-2 ms-2">View Plans</a>
+{% endblock %}

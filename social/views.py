@@ -8,6 +8,20 @@ from .models import Post, Like, Comment, FriendRequest, Friendship, UserProfile
 from django.db.models import Q
 import random
 import string
+import razorpay
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils.timezone import now
+import pytz
+from django.core.mail import send_mail
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import inch
+from io import BytesIO
+from django.core.files.base import ContentFile
+import random
 
 
 # ── Helper: get friend count ──
@@ -190,3 +204,350 @@ def forgot_password(request):
                 })
 
     return render(request, 'social/forgot_password.html', {'error': error})
+# ── Subscription Plans ──
+@login_required
+def plans(request):
+    from .models import Subscription, InternshipApplication
+    subscription, _ = Subscription.objects.get_or_create(user=request.user)
+    applications_this_month = InternshipApplication.objects.filter(
+        user=request.user,
+        applied_at__month=now().month,
+        applied_at__year=now().year
+    ).count()
+    return render(request, 'social/plans.html', {
+        'subscription': subscription,
+        'applications_this_month': applications_this_month,
+    })
+
+# ── Create Razorpay Order ──
+@login_required
+def create_order(request, plan):
+    # Check time restriction (10am - 11am IST)
+    ist = pytz.timezone('Asia/Kolkata')
+    current_time = now().astimezone(ist)
+    if not (10 <= current_time.hour < 11):
+        return render(request, 'social/payment_blocked.html', {
+            'current_time': current_time.strftime('%I:%M %p IST')
+        })
+
+    plan_prices = {
+        'bronze': 10000,  # ₹100 in paise
+        'silver': 30000,  # ₹300 in paise
+        'gold': 100000,   # ₹1000 in paise
+    }
+
+    if plan not in plan_prices:
+        return redirect('plans')
+
+    amount = plan_prices[plan]
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    order = client.order.create({
+        'amount': amount,
+        'currency': 'INR',
+        'payment_capture': 1,
+    })
+
+    from .models import Payment
+    payment = Payment.objects.create(
+        user=request.user,
+        razorpay_order_id=order['id'],
+        plan=plan,
+        amount=amount // 100,
+    )
+
+    return render(request, 'social/payment.html', {
+        'order': order,
+        'payment': payment,
+        'plan': plan,
+        'amount': amount // 100,
+        'razorpay_key': settings.RAZORPAY_KEY_ID,
+    })
+
+# ── Payment Success ──
+@login_required
+def payment_success(request):
+    if request.method == 'POST':
+        razorpay_payment_id = request.POST.get('razorpay_payment_id')
+        razorpay_order_id = request.POST.get('razorpay_order_id')
+
+        from .models import Payment, Subscription
+        import datetime
+
+        try:
+            payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.paid = True
+            payment.save()
+
+            # Update subscription
+            subscription, _ = Subscription.objects.get_or_create(user=request.user)
+            subscription.plan = payment.plan
+            subscription.start_date = now().date()
+            subscription.end_date = now().date() + datetime.timedelta(days=30)
+            subscription.is_active = True
+            subscription.save()
+
+            # Send email invoice
+            send_mail(
+                subject='PublicSpace — Payment Successful!',
+                message=f'''Hi {request.user.username},
+
+Your payment was successful!
+
+Plan: {payment.plan.capitalize()}
+Amount: ₹{payment.amount}
+Payment ID: {razorpay_payment_id}
+Valid until: {subscription.end_date}
+
+Thank you for subscribing to PublicSpace!
+''',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+
+            return render(request, 'social/payment_success.html', {
+                'payment': payment,
+                'subscription': subscription,
+            })
+        except Payment.DoesNotExist:
+            return redirect('plans')
+
+    return redirect('plans')
+
+# ── Apply for Internship ──
+@login_required
+def apply_internship(request):
+    from .models import Subscription, InternshipApplication
+    subscription, _ = Subscription.objects.get_or_create(user=request.user)
+    applications_this_month = InternshipApplication.objects.filter(
+        user=request.user,
+        applied_at__month=now().month,
+        applied_at__year=now().year
+    ).count()
+
+    limit = subscription.get_application_limit()
+    if applications_this_month >= limit:
+        return render(request, 'social/apply_internship.html', {
+            'error': f'You have reached your limit of {limit} application(s) this month. Upgrade your plan to apply more!',
+            'subscription': subscription,
+        })
+
+    if request.method == 'POST':
+        company = request.POST.get('company')
+        role = request.POST.get('role')
+        if company and role:
+            InternshipApplication.objects.create(
+                user=request.user,
+                company=company,
+                role=role,
+            )
+            return redirect('my_applications')
+
+    return render(request, 'social/apply_internship.html', {
+        'subscription': subscription,
+        'applications_this_month': applications_this_month,
+        'limit': limit,
+    })
+
+# ── My Applications ──
+@login_required
+def my_applications(request):
+    from .models import InternshipApplication
+    applications = InternshipApplication.objects.filter(user=request.user).order_by('-applied_at')
+    return render(request, 'social/my_applications.html', {'applications': applications})
+# ── Generate OTP ──
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+# ── Resume Form ──
+@login_required
+def resume_create(request):
+    from .models import Subscription, Resume, OTPVerification
+
+    # Check if user has premium plan
+    subscription, _ = Subscription.objects.get_or_create(user=request.user)
+    if subscription.plan == 'free':
+        return render(request, 'social/resume_locked.html')
+
+    # Check if already has paid resume
+    existing_resume = Resume.objects.filter(user=request.user, is_paid=True).first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'send_otp':
+            # Save form data to session
+            request.session['resume_data'] = {
+                'full_name': request.POST.get('full_name'),
+                'email': request.POST.get('email'),
+                'phone': request.POST.get('phone'),
+                'address': request.POST.get('address'),
+                'qualification': request.POST.get('qualification'),
+                'experience': request.POST.get('experience'),
+                'skills': request.POST.get('skills'),
+            }
+            # Generate and send OTP
+            otp = generate_otp()
+            OTPVerification.objects.filter(user=request.user, purpose='resume').delete()
+            OTPVerification.objects.create(user=request.user, otp=otp, purpose='resume')
+
+            send_mail(
+                subject='PublicSpace — OTP for Resume Payment',
+                message=f'''Hi {request.user.username},
+
+Your OTP for resume payment verification is:
+
+{otp}
+
+This OTP is valid for 10 minutes. Do not share it with anyone.
+
+Team PublicSpace
+''',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+            return render(request, 'social/resume_otp.html', {'email': request.user.email})
+
+        elif action == 'verify_otp':
+            otp_entered = request.POST.get('otp')
+            try:
+                otp_obj = OTPVerification.objects.get(
+                    user=request.user,
+                    purpose='resume',
+                    is_verified=False
+                )
+                if otp_obj.otp == otp_entered:
+                    otp_obj.is_verified = True
+                    otp_obj.save()
+                    # Create Razorpay order for ₹50
+                    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+                    order = client.order.create({
+                        'amount': 5000,  # ₹50 in paise
+                        'currency': 'INR',
+                        'payment_capture': 1,
+                    })
+                    from .models import Payment
+                    payment = Payment.objects.create(
+                        user=request.user,
+                        razorpay_order_id=order['id'],
+                        plan='resume',
+                        amount=50,
+                    )
+                    return render(request, 'social/resume_payment.html', {
+                        'order': order,
+                        'payment': payment,
+                        'razorpay_key': settings.RAZORPAY_KEY_ID,
+                    })
+                else:
+                    return render(request, 'social/resume_otp.html', {
+                        'email': request.user.email,
+                        'error': 'Invalid OTP. Please try again.'
+                    })
+            except OTPVerification.DoesNotExist:
+                return render(request, 'social/resume_otp.html', {
+                    'email': request.user.email,
+                    'error': 'OTP expired. Please go back and try again.'
+                })
+
+    return render(request, 'social/resume_form.html', {
+        'existing_resume': existing_resume,
+    })
+
+# ── Resume Payment Success ──
+@login_required
+def resume_payment_success(request):
+    if request.method == 'POST':
+        razorpay_payment_id = request.POST.get('razorpay_payment_id')
+        razorpay_order_id = request.POST.get('razorpay_order_id')
+
+        from .models import Payment, Resume
+        try:
+            payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.paid = True
+            payment.save()
+
+            # Get resume data from session
+            resume_data = request.session.get('resume_data', {})
+
+            # Generate PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            styles = getSampleStyleSheet()
+            story = []
+
+            # Title
+            story.append(Paragraph(resume_data.get('full_name', ''), styles['Title']))
+            story.append(Spacer(1, 0.2 * inch))
+
+            # Contact info
+            contact = f"📧 {resume_data.get('email', '')} | 📞 {resume_data.get('phone', '')} | 📍 {resume_data.get('address', '')}"
+            story.append(Paragraph(contact, styles['Normal']))
+            story.append(Spacer(1, 0.3 * inch))
+
+            # Sections
+            sections = [
+                ('Qualifications', resume_data.get('qualification', '')),
+                ('Experience', resume_data.get('experience', 'No experience listed')),
+                ('Skills', resume_data.get('skills', '')),
+            ]
+
+            for title, content in sections:
+                story.append(Paragraph(f"<b>{title}</b>", styles['Heading2']))
+                story.append(Paragraph(content, styles['Normal']))
+                story.append(Spacer(1, 0.2 * inch))
+
+            doc.build(story)
+            pdf_content = buffer.getvalue()
+            buffer.close()
+
+            # Save resume
+            resume, _ = Resume.objects.get_or_create(user=request.user)
+            resume.full_name = resume_data.get('full_name', '')
+            resume.email = resume_data.get('email', '')
+            resume.phone = resume_data.get('phone', '')
+            resume.address = resume_data.get('address', '')
+            resume.qualification = resume_data.get('qualification', '')
+            resume.experience = resume_data.get('experience', '')
+            resume.skills = resume_data.get('skills', '')
+            resume.is_paid = True
+            resume.resume_file.save(
+                f"resume_{request.user.username}.pdf",
+                ContentFile(pdf_content)
+            )
+            resume.save()
+
+            # Send email
+            send_mail(
+                subject='PublicSpace — Your Resume is Ready!',
+                message=f'''Hi {request.user.username},
+
+Your resume has been generated successfully!
+
+Payment ID: {razorpay_payment_id}
+Amount Paid: ₹50
+
+Your resume is now attached to your profile and will be used for internship applications.
+
+Team PublicSpace
+''',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+
+            return render(request, 'social/resume_success.html', {'resume': resume})
+
+        except Payment.DoesNotExist:
+            return redirect('resume_create')
+
+    return redirect('resume_create')
+
+# ── View Resume ──
+@login_required
+def view_resume(request):
+    from .models import Resume
+    resume = Resume.objects.filter(user=request.user, is_paid=True).first()
+    return render(request, 'social/view_resume.html', {'resume': resume})

@@ -1,0 +1,51 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card p-4">
+  <h4 class="mb-4 text-center">📄 My Resume</h4>
+
+  {% if resume %}
+  <div class="alert alert-success text-center mb-4">
+    ✅ Your resume is attached to your profile!
+  </div>
+
+  <div class="card bg-light p-4 mb-3">
+    <h3 class="text-center">{{ resume.full_name }}</h3>
+    <p class="text-center text-muted">
+      📧 {{ resume.email }} | 📞 {{ resume.phone }}
+    </p>
+    <p class="text-center text-muted">📍 {{ resume.address }}</p>
+    <hr>
+
+    <h5>🎓 Qualifications</h5>
+    <p>{{ resume.qualification }}</p>
+    <hr>
+
+    {% if resume.experience %}
+    <h5>💼 Experience</h5>
+    <p>{{ resume.experience }}</p>
+    <hr>
+    {% endif %}
+
+    <h5>⚡ Skills</h5>
+    <p>{{ resume.skills }}</p>
+  </div>
+
+  {% if resume.resume_file %}
+  <a href="{{ resume.resume_file.url }}" class="btn btn-success w-100 mt-2" download>
+    ⬇️ Download PDF Resume
+  </a>
+  {% endif %}
+
+  <a href="{% url 'apply_internship' %}" class="btn btn-primary w-100 mt-2">
+    Apply for Internship
+  </a>
+
+  {% else %}
+  <div class="alert alert-info text-center">
+    You don't have a resume yet.
+    <a href="{% url 'resume_create' %}">Create one now!</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card p-4">
+  <h4 class="mb-4 text-center">📄 Create Your Resume</h4>
+
+  {% if existing_resume %}
+  <div class="alert alert-success text-center">
+    You already have a resume! <a href="{% url 'view_resume' %}">View it here</a>
+  </div>
+  {% endif %}
+
+  <div class="alert alert-info">
+    💳 Resume creation costs <strong>₹50</strong>. An OTP will be sent to your email for verification before payment.
+  </div>
+
+  <form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="send_otp">
+
+    <div class="mb-3">
+      <label class="form-label">Full Name <span class="text-danger">*</span></label>
+      <input type="text" name="full_name" class="form-control" placeholder="Enter your full name" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email <span class="text-danger">*</span></label>
+      <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Phone <span class="text-danger">*</span></label>
+      <input type="text" name="phone" class="form-control" placeholder="Enter your phone number" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Address <span class="text-danger">*</span></label>
+      <textarea name="address" class="form-control" rows="2" placeholder="Enter your address" required></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Qualifications <span class="text-danger">*</span></label>
+      <textarea name="qualification" class="form-control" rows="3" placeholder="e.g. B.Tech Computer Science, XYZ University, 2024" required></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Experience</label>
+      <textarea name="experience" class="form-control" rows="3" placeholder="e.g. Intern at ABC Company, 2023 (leave blank if fresher)"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Skills <span class="text-danger">*</span></label>
+      <textarea name="skills" class="form-control" rows="2" placeholder="e.g. Python, Django, HTML, CSS, JavaScript" required></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Send OTP & Proceed to Payment</button>
+    <a href="{% url 'plans' %}" class="btn btn-outline-secondary w-100 mt-2">Back to Plans</a>
+  </form>
+</div>
+{% endblock %}

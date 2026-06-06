@@ -1,0 +1,25 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card p-4 text-center">
+  <div style="font-size: 64px;">🎉</div>
+  <h4 class="mt-3">Payment Successful!</h4>
+  <p class="text-muted">Thank you for subscribing to PublicSpace!</p>
+
+  <div class="alert alert-success mt-3 text-start">
+    <h5>Invoice Details</h5>
+    <hr>
+    <p><strong>Plan:</strong> {{ payment.plan|title }}</p>
+    <p><strong>Amount Paid:</strong> ₹{{ payment.amount }}</p>
+    <p><strong>Payment ID:</strong> {{ payment.razorpay_payment_id }}</p>
+    <p><strong>Valid Until:</strong> {{ subscription.end_date }}</p>
+  </div>
+
+  <div class="alert alert-info mt-2">
+    📧 An invoice has been sent to your registered email!
+  </div>
+
+  <a href="{% url 'plans' %}" class="btn btn-primary mt-2 w-100">View Plans</a>
+  <a href="{% url 'apply_internship' %}" class="btn btn-success mt-2 w-100">Apply for Internship</a>
+</div>
+{% endblock %}

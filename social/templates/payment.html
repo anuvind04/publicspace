@@ -1,0 +1,43 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<div class="card p-4 text-center">
+  <h4 class="mb-4">Complete Payment</h4>
+  <p>Plan: <strong>{{ plan|title }}</strong></p>
+  <p>Amount: <strong>₹{{ amount }}</strong></p>
+
+  <button id="pay-btn" class="btn btn-primary w-100 mt-3">Pay ₹{{ amount }}</button>
+
+  <form id="payment-form" method="POST" action="{% url 'payment_success' %}">
+    {% csrf_token %}
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_order_id" value="{{ order.id }}">
+  </form>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  var options = {
+    key: "{{ razorpay_key }}",
+    amount: "{{ order.amount }}",
+    currency: "INR",
+    name: "PublicSpace",
+    description: "{{ plan|title }} Plan Subscription",
+    order_id: "{{ order.id }}",
+    handler: function(response) {
+      document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+      document.getElementById('payment-form').submit();
+    },
+    prefill: {
+      name: "{{ request.user.username }}",
+      email: "{{ request.user.email }}",
+    },
+    theme: { color: "#6c63ff" }
+  };
+
+  document.getElementById('pay-btn').onclick = function() {
+    var rzp = new Razorpay(options);
+    rzp.open();
+  };
+</script>
+{% endblock %}
