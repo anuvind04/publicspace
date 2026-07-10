@@ -1,6 +1,7 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
+{% load i18n %}
 <h3 class="mb-4 text-center">Subscription Plans</h3>
 <p class="text-center text-muted">Your current plan: <strong class="text-primary">{{ subscription.plan|title }}</strong> | Applications this month: <strong>{{ applications_this_month }}</strong></p>
 

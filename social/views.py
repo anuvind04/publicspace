@@ -13,7 +13,6 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.timezone import now
 import pytz
-from django.core.mail import send_mail
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
@@ -21,7 +20,9 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.units import inch
 from io import BytesIO
 from django.core.files.base import ContentFile
-import random
+from django.utils.translation import gettext_lazy as _
+from django.utils import translation
+from django import forms
 
 
 # ── Helper: get friend count ──
@@ -165,6 +166,7 @@ def accept_request(request, pk):
 def notifications(request):
     requests = FriendRequest.objects.filter(to_user=request.user)
     return render(request, 'social/notifications.html', {'requests': requests})
+
 # ── Password Generator (letters only) ──
 def generate_password(length=10):
     characters = string.ascii_uppercase + string.ascii_lowercase
@@ -204,6 +206,7 @@ def forgot_password(request):
                 })
 
     return render(request, 'social/forgot_password.html', {'error': error})
+
 # ── Subscription Plans ──
 @login_required
 def plans(request):
@@ -222,7 +225,6 @@ def plans(request):
 # ── Create Razorpay Order ──
 @login_required
 def create_order(request, plan):
-    # Check time restriction (10am - 11am IST)
     ist = pytz.timezone('Asia/Kolkata')
     current_time = now().astimezone(ist)
     if not (10 <= current_time.hour < 11):
@@ -231,9 +233,9 @@ def create_order(request, plan):
         })
 
     plan_prices = {
-        'bronze': 10000,  # ₹100 in paise
-        'silver': 30000,  # ₹300 in paise
-        'gold': 100000,   # ₹1000 in paise
+        'bronze': 10000,
+        'silver': 30000,
+        'gold': 100000,
     }
 
     if plan not in plan_prices:
@@ -279,7 +281,6 @@ def payment_success(request):
             payment.paid = True
             payment.save()
 
-            # Update subscription
             subscription, _ = Subscription.objects.get_or_create(user=request.user)
             subscription.plan = payment.plan
             subscription.start_date = now().date()
@@ -287,7 +288,6 @@ def payment_success(request):
             subscription.is_active = True
             subscription.save()
 
-            # Send email invoice
             send_mail(
                 subject='PublicSpace — Payment Successful!',
                 message=f'''Hi {request.user.username},
@@ -356,6 +356,7 @@ def my_applications(request):
     from .models import InternshipApplication
     applications = InternshipApplication.objects.filter(user=request.user).order_by('-applied_at')
     return render(request, 'social/my_applications.html', {'applications': applications})
+
 # ── Generate OTP ──
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -365,19 +366,16 @@ def generate_otp():
 def resume_create(request):
     from .models import Subscription, Resume, OTPVerification
 
-    # Check if user has premium plan
     subscription, _ = Subscription.objects.get_or_create(user=request.user)
     if subscription.plan == 'free':
         return render(request, 'social/resume_locked.html')
 
-    # Check if already has paid resume
     existing_resume = Resume.objects.filter(user=request.user, is_paid=True).first()
 
     if request.method == 'POST':
         action = request.POST.get('action')
 
         if action == 'send_otp':
-            # Save form data to session
             request.session['resume_data'] = {
                 'full_name': request.POST.get('full_name'),
                 'email': request.POST.get('email'),
@@ -387,7 +385,6 @@ def resume_create(request):
                 'experience': request.POST.get('experience'),
                 'skills': request.POST.get('skills'),
             }
-            # Generate and send OTP
             otp = generate_otp()
             OTPVerification.objects.filter(user=request.user, purpose='resume').delete()
             OTPVerification.objects.create(user=request.user, otp=otp, purpose='resume')
@@ -421,10 +418,9 @@ Team PublicSpace
                 if otp_obj.otp == otp_entered:
                     otp_obj.is_verified = True
                     otp_obj.save()
-                    # Create Razorpay order for ₹50
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
                     order = client.order.create({
-                        'amount': 5000,  # ₹50 in paise
+                        'amount': 5000,
                         'currency': 'INR',
                         'payment_capture': 1,
                     })
@@ -469,25 +465,20 @@ def resume_payment_success(request):
             payment.paid = True
             payment.save()
 
-            # Get resume data from session
             resume_data = request.session.get('resume_data', {})
 
-            # Generate PDF
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4)
             styles = getSampleStyleSheet()
             story = []
 
-            # Title
             story.append(Paragraph(resume_data.get('full_name', ''), styles['Title']))
             story.append(Spacer(1, 0.2 * inch))
 
-            # Contact info
             contact = f"📧 {resume_data.get('email', '')} | 📞 {resume_data.get('phone', '')} | 📍 {resume_data.get('address', '')}"
             story.append(Paragraph(contact, styles['Normal']))
             story.append(Spacer(1, 0.3 * inch))
 
-            # Sections
             sections = [
                 ('Qualifications', resume_data.get('qualification', '')),
                 ('Experience', resume_data.get('experience', 'No experience listed')),
@@ -503,7 +494,6 @@ def resume_payment_success(request):
             pdf_content = buffer.getvalue()
             buffer.close()
 
-            # Save resume
             resume, _ = Resume.objects.get_or_create(user=request.user)
             resume.full_name = resume_data.get('full_name', '')
             resume.email = resume_data.get('email', '')
@@ -519,7 +509,6 @@ def resume_payment_success(request):
             )
             resume.save()
 
-            # Send email
             send_mail(
                 subject='PublicSpace — Your Resume is Ready!',
                 message=f'''Hi {request.user.username},
@@ -551,3 +540,75 @@ def view_resume(request):
     from .models import Resume
     resume = Resume.objects.filter(user=request.user, is_paid=True).first()
     return render(request, 'social/view_resume.html', {'resume': resume})
+
+# ── Language Switch with OTP for French ──
+def set_language_custom(request):
+    if request.method == 'POST':
+        language = request.POST.get('language')
+
+        if language == 'fr':
+            if not request.user.is_authenticated:
+                return redirect('login')
+            otp = generate_otp()
+            from .models import OTPVerification
+            OTPVerification.objects.filter(user=request.user, purpose='language').delete()
+            OTPVerification.objects.create(user=request.user, otp=otp, purpose='language')
+
+            send_mail(
+                subject='PublicSpace — OTP for Language Change',
+                message=f'''Hi {request.user.username},
+
+Your OTP to switch the website language to French is:
+
+{otp}
+
+This OTP is valid for 10 minutes.
+
+Team PublicSpace
+''',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[request.user.email],
+                fail_silently=True,
+            )
+            request.session['pending_language'] = language
+            return render(request, 'social/language_otp.html', {'email': request.user.email})
+        else:
+             translation.activate(language)
+             request.session['_language'] = language
+             response = redirect(f'/{language}/')
+             response.set_cookie(settings.LANGUAGE_COOKIE_NAME, language)
+    return response
+
+    return redirect('feed')
+
+
+def verify_language_otp(request):
+    if request.method == 'POST':
+        otp_entered = request.POST.get('otp')
+        language = request.session.get('pending_language', 'fr')
+        from .models import OTPVerification
+        try:
+            otp_obj = OTPVerification.objects.get(
+                user=request.user,
+                purpose='language',
+                is_verified=False
+            )
+            if otp_obj.otp == otp_entered:
+                otp_obj.is_verified = True
+                otp_obj.save()
+                translation.activate(language)
+                request.session['_language'] = language
+                response = redirect('feed')
+                response.set_cookie(settings.LANGUAGE_COOKIE_NAME, language)
+                return response
+            else:
+                return render(request, 'social/language_otp.html', {
+                    'email': request.user.email,
+                    'error': _('Invalid OTP. Please try again.')
+                })
+        except OTPVerification.DoesNotExist:
+            return render(request, 'social/language_otp.html', {
+                'email': request.user.email,
+                'error': _('OTP expired. Please try again.')
+            })
+    return redirect('feed')

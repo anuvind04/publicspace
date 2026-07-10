@@ -1,7 +1,8 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
-<h4 class="mb-4">Friend Requests</h4>
+{% load i18n %}
+<h4 class="mb-4">{% trans "Friend Requests" %}</h4>
 
 {% for req in requests %}
 <div class="card mb-3">
@@ -10,13 +11,13 @@
       <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;">
         {{ req.from_user.username|first|upper }}
       </div>
-      <strong>{{ req.from_user.username }}</strong> wants to be your friend
+      {% blocktrans with name=req.from_user.username %}<strong>{{ name }}</strong> wants to be your friend{% endblocktrans %}
     </div>
-    <a href="{% url 'accept_request' req.pk %}" class="btn btn-sm btn-success">Accept</a>
+    <a href="{% url 'accept_request' req.pk %}" class="btn btn-sm btn-success">{% trans "Accept" %}</a>
   </div>
 </div>
 {% empty %}
-<div class="alert alert-info">No friend requests yet.</div>
+<div class="alert alert-info">{% trans "No friend requests yet." %}</div>
 {% endfor %}
 
 {% endblock %}

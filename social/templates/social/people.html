@@ -1,7 +1,8 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
-<h4 class="mb-4">People</h4>
+{% load i18n %}
+<h4 class="mb-4">{% trans "People" %}</h4>
 
 {% for u in all_users %}
 <div class="card mb-3">
@@ -14,17 +15,17 @@
     </div>
     <div>
       {% if u.id in friend_ids %}
-        <span class="badge bg-success">Friends ✓</span>
+        <span class="badge bg-success">{% trans "Friends ✓" %}</span>
       {% elif u.id in sent %}
-        <span class="badge bg-warning text-dark">Request Sent</span>
+        <span class="badge bg-warning text-dark">{% trans "Request Sent" %}</span>
       {% else %}
-        <a href="{% url 'send_request' u.pk %}" class="btn btn-sm btn-primary">Add Friend</a>
+        <a href="{% url 'send_request' u.pk %}" class="btn btn-sm btn-primary">{% trans "Add Friend" %}</a>
       {% endif %}
     </div>
   </div>
 </div>
 {% empty %}
-<div class="alert alert-info">No other users found.</div>
+<div class="alert alert-info">{% trans "No other users found." %}</div>
 {% endfor %}
 
 {% endblock %}

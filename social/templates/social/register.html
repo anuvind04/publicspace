@@ -1,8 +1,9 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
+{% load i18n %}
 <div class="card p-4">
-  <h4 class="mb-4 text-center">Create Account</h4>
+  <h4 class="mb-4 text-center">{% trans "Create Account" %}</h4>
   <form method="POST">
     {% csrf_token %}
     {% for field in form %}
@@ -15,15 +16,15 @@
     </div>
     {% endfor %}
     <div class="mb-3">
-      <label class="form-label">Email Address <span class="text-danger">*</span></label>
-      <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
+      <label class="form-label">{% trans "Email Address" %} <span class="text-danger">*</span></label>
+      <input type="email" name="email" class="form-control" placeholder="{% trans 'Enter your email' %}" required>
     </div>
     <div class="mb-3">
-      <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-      <input type="text" name="phone" class="form-control" placeholder="Enter your phone number" required>
+      <label class="form-label">{% trans "Phone Number" %} <span class="text-danger">*</span></label>
+      <input type="text" name="phone" class="form-control" placeholder="{% trans 'Enter your phone number' %}" required>
     </div>
-    <button type="submit" class="btn btn-success w-100">Create Account</button>
+    <button type="submit" class="btn btn-success w-100">{% trans "Create Account" %}</button>
   </form>
-  <p class="text-center mt-3">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+  <p class="text-center mt-3">{% trans "Already have an account?" %} <a href="{% url 'login' %}">{% trans "Login" %}</a></p>
 </div>
 {% endblock %}

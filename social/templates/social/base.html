@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load i18n %}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,17 +20,66 @@
     <a class="navbar-brand" href="/">PublicSpace</a>
     {% if user.is_authenticated %}
     <div class="d-flex gap-2">
-      <a href="{% url 'people' %}" class="btn btn-outline-secondary btn-sm">People</a>
-      <a href="{% url 'notifications' %}" class="btn btn-outline-primary btn-sm">Requests</a>
-      <a href="{% url 'plans' %}" class="btn btn-outline-success btn-sm">Plans</a>
-      <a href="{% url 'resume_create' %}" class="btn btn-outline-warning btn-sm">Resume</a>
-      <a href="{% url 'create_post' %}" class="btn btn-primary btn-sm">+ Post</a>
-      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">Logout</a>
+      <a href="{% url 'people' %}" class="btn btn-outline-secondary btn-sm">{% trans "People" %}</a>
+      <a href="{% url 'notifications' %}" class="btn btn-outline-primary btn-sm">{% trans "Requests" %}</a>
+      <a href="{% url 'plans' %}" class="btn btn-outline-success btn-sm">{% trans "Plans" %}</a>
+      <a href="{% url 'resume_create' %}" class="btn btn-outline-warning btn-sm">{% trans "Resume" %}</a>
+      <div class="dropdown d-inline">
+        <button class="btn btn-outline-dark btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          🌐 {% trans "Language" %}
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="en">
+              <button type="submit" class="dropdown-item">{% trans "English" %}</button>
+            </form>
+          </li>
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="es">
+              <button type="submit" class="dropdown-item">Español</button>
+            </form>
+          </li>
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="hi">
+              <button type="submit" class="dropdown-item">हिन्दी</button>
+            </form>
+          </li>
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="pt">
+              <button type="submit" class="dropdown-item">Português</button>
+            </form>
+          </li>
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="zh-hans">
+              <button type="submit" class="dropdown-item">中文</button>
+            </form>
+          </li>
+          <li>
+            <form method="POST" action="{% url 'set_language_custom' %}">
+              {% csrf_token %}
+              <input type="hidden" name="language" value="fr">
+              <button type="submit" class="dropdown-item">Français 🔒</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+      <a href="{% url 'create_post' %}" class="btn btn-primary btn-sm">{% trans "+ Post" %}</a>
+      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">{% trans "Logout" %}</a>
     </div>
     {% else %}
     <div class="d-flex gap-2">
-      <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm">Login</a>
-      <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Register</a>
+      <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm">{% trans "Login" %}</a>
+      <a href="{% url 'register' %}" class="btn btn-primary btn-sm">{% trans "Register" %}</a>
     </div>
     {% endif %}
   </div>

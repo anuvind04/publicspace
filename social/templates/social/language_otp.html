@@ -1,0 +1,32 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+{% load i18n %}
+<div class="card p-4 text-center">
+  <div style="font-size: 48px;">🇫🇷</div>
+  <h4 class="mt-3">Verify Email for French</h4>
+  <p class="text-muted">An OTP has been sent to <strong>{{ email }}</strong> to switch to French.</p>
+
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="{% url 'verify_language_otp' %}">
+    {% csrf_token %}
+    <div class="mb-3 text-start">
+      <label class="form-label">Enter OTP</label>
+      <input type="text" name="otp" class="form-control text-center" 
+             placeholder="Enter 6-digit OTP" maxlength="6" required
+             style="font-size: 24px; letter-spacing: 8px;">
+    </div>
+   {% load i18n %}
+
+<button type="submit" class="btn btn-primary w-100">
+    {% trans "Verify & Switch to French" %}
+</button>
+
+<a href="{% url 'feed' %}" class="btn btn-outline-secondary w-100 mt-3">
+    {% trans "Cancel" %}
+</a>
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 {% extends 'social/base.html' %}
 
 {% block content %}
+{% load i18n %}
 
 <!-- Post limit notice -->
 {% if not can_post %}
@@ -11,9 +12,10 @@
 
 <!-- Friend count -->
 <div class="alert alert-info">
-  You have <strong>{{ friend_count }}</strong> friend{{ friend_count|pluralize }}.
-  {% if friend_count >= 10 %}You can post unlimited times today! 🎉
-  {% elif friend_count > 0 %}You can post <strong>{{ friend_count }}</strong> time{{ friend_count|pluralize }} today.
+  {% blocktrans with count=friend_count %}You have <strong>{{ count }}</strong> friend.{% endblocktrans %}
+  {% if friend_count >= 10 %}{% trans "You can post unlimited times today! 🎉" %}
+  {% elif friend_count > 0 %}
+  {% blocktrans with count=friend_count %}You can post <strong>{{ count }}</strong> time today.{% endblocktrans %}
   {% endif %}
 </div>
 
@@ -29,12 +31,12 @@
       </div>
       <div>
         <strong>{{ post.user.username }}</strong>
-        <div class="text-muted small">{{ post.created_at|timesince }} ago</div>
+        <div class="text-muted small">{% blocktrans with time=post.created_at|timesince %}{{ time }} ago{% endblocktrans %}</div>
       </div>
       {% if post.user == request.user %}
       <form method="POST" action="{% url 'delete_post' post.pk %}" class="ms-auto">
         {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
       </form>
       {% endif %}
     </div>
@@ -46,7 +48,7 @@
 
     <!-- Image -->
     {% if post.image %}
-    <img src="{{ post.image.url }}" class="post-image mb-3" alt="post image">
+    <img src="{{ post.image.url }}" class="post-image mb-3" alt="{% trans 'post image' %}">
     {% endif %}
 
     <!-- Video -->
@@ -77,14 +79,14 @@
     <!-- Add comment -->
     <form method="POST" action="{% url 'add_comment' post.pk %}" class="mt-2 d-flex gap-2">
       {% csrf_token %}
-      <input type="text" name="text" class="form-control form-control-sm" placeholder="Write a comment...">
-      <button type="submit" class="btn btn-sm btn-primary">Send</button>
+      <input type="text" name="text" class="form-control form-control-sm" placeholder="{% trans 'Write a comment...' %}">
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Send" %}</button>
     </form>
 
   </div>
 </div>
 {% empty %}
-<div class="alert alert-info">No posts yet. Be the first to post!</div>
+<div class="alert alert-info">{% trans "No posts yet. Be the first to post!" %}</div>
 {% endfor %}
 
 {% endblock %}
