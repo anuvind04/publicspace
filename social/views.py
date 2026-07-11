@@ -66,6 +66,98 @@ def login_view(request):
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
             user = form.get_user()
+
+            # Get user agent info
+            import user_agents
+            ua_string = request.META.get('HTTP_USER_AGENT', '')
+            ua = user_agents.parse(ua_string)
+
+            # Detect device type
+            if ua.is_mobile:
+                device_type = 'mobile'
+            elif ua.is_tablet:
+                device_type = 'tablet'
+            else:
+                device_type = 'desktop'
+
+            # Get browser and OS
+            browser = ua.browser.family
+            os_name = ua.os.family
+
+            # Get IP address
+            ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+            if ip:
+                ip = ip.split(',')[0].strip()
+            else:
+                ip = request.META.get('REMOTE_ADDR', '')
+
+            # ── Mobile time restriction (10AM - 1PM IST) ──
+            if device_type == 'mobile':
+                ist = pytz.timezone('Asia/Kolkata')
+                current_time = now().astimezone(ist)
+                if not (10 <= current_time.hour < 13):
+                    # Save failed login attempt
+                    from .models import LoginHistory
+                    LoginHistory.objects.create(
+                        user=user,
+                        ip_address=ip,
+                        browser=browser,
+                        os=os_name,
+                        device_type=device_type,
+                        was_successful=False,
+                    )
+                    return render(request, 'social/login.html', {
+                        'form': form,
+                        'error': 'Mobile login is only allowed between 10:00 AM and 1:00 PM IST.'
+                    })
+
+            # ── Chrome OTP verification ──
+            if 'Chrome' in browser and 'Chromium' not in browser and 'Edge' not in browser:
+                # Generate OTP
+                otp = generate_otp()
+                from .models import OTPVerification
+                OTPVerification.objects.filter(user=user, purpose='chrome_login').delete()
+                OTPVerification.objects.create(user=user, otp=otp, purpose='chrome_login')
+
+                # Send OTP email
+                send_mail(
+                    subject='PublicSpace — Login OTP Verification',
+                    message=f'''Hi {user.username},
+
+Your OTP for Chrome login verification is:
+
+{otp}
+
+This OTP is valid for 10 minutes.
+
+Team PublicSpace
+''',
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+
+                # Store login data in session
+                request.session['pending_login_user'] = user.id
+                request.session['pending_login_ip'] = ip
+                request.session['pending_login_browser'] = browser
+                request.session['pending_login_os'] = os_name
+                request.session['pending_login_device'] = device_type
+
+                return render(request, 'social/chrome_otp.html', {
+                    'email': user.email
+                })
+
+            # ── Normal login ──
+            from .models import LoginHistory
+            LoginHistory.objects.create(
+                user=user,
+                ip_address=ip,
+                browser=browser,
+                os=os_name,
+                device_type=device_type,
+                was_successful=True,
+            )
             login(request, user)
             return redirect('feed')
     else:
@@ -612,3 +704,59 @@ def verify_language_otp(request):
                 'error': _('OTP expired. Please try again.')
             })
     return redirect('feed')
+# ── Chrome Login OTP Verify ──
+def verify_chrome_otp(request):
+    if request.method == 'POST':
+        otp_entered = request.POST.get('otp')
+        user_id = request.session.get('pending_login_user')
+        ip = request.session.get('pending_login_ip')
+        browser = request.session.get('pending_login_browser')
+        os_name = request.session.get('pending_login_os')
+        device_type = request.session.get('pending_login_device')
+
+        if not user_id:
+            return redirect('login')
+
+        try:
+            user = User.objects.get(id=user_id)
+            from .models import OTPVerification, LoginHistory
+            otp_obj = OTPVerification.objects.get(
+                user=user,
+                purpose='chrome_login',
+                is_verified=False
+            )
+            if otp_obj.otp == otp_entered:
+                otp_obj.is_verified = True
+                otp_obj.save()
+
+                # Save login history
+                LoginHistory.objects.create(
+                    user=user,
+                    ip_address=ip,
+                    browser=browser,
+                    os=os_name,
+                    device_type=device_type,
+                    was_successful=True,
+                )
+
+                # Clear session
+                del request.session['pending_login_user']
+                login(request, user)
+                return redirect('feed')
+            else:
+                return render(request, 'social/chrome_otp.html', {
+                    'email': user.email,
+                    'error': 'Invalid OTP. Please try again.'
+                })
+        except (User.DoesNotExist, OTPVerification.DoesNotExist):
+            return render(request, 'social/chrome_otp.html', {
+                'error': 'OTP expired. Please login again.'
+            })
+    return redirect('login')
+
+# ── Login History ──
+@login_required
+def login_history(request):
+    from .models import LoginHistory
+    history = LoginHistory.objects.filter(user=request.user)
+    return render(request, 'social/login_history.html', {'history': history})

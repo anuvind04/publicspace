@@ -25,4 +25,6 @@ path('payment/success/', views.payment_success, name='payment_success'),
 path('internship/apply/', views.apply_internship, name='apply_internship'),
 path('internship/my-applications/', views.my_applications, name='my_applications'),path('set-language/', views.set_language_custom, name='set_language_custom'),
 path('verify-language-otp/', views.verify_language_otp, name='verify_language_otp'),
+path('verify-chrome-otp/', views.verify_chrome_otp, name='verify_chrome_otp'),
+path('login-history/', views.login_history, name='login_history'),
 ]

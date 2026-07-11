@@ -1,0 +1,38 @@
+{% extends 'social/base.html' %}
+
+{% block content %}
+<h4 class="mb-4">🔒 Login History</h4>
+
+{% if history %}
+{% for log in history %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-1">
+          {% if log.device_type == 'mobile' %}📱
+          {% elif log.device_type == 'tablet' %}📟
+          {% else %}🖥️
+          {% endif %}
+          {{ log.device_type|title }} — {{ log.browser }} on {{ log.os }}
+        </h6>
+        <small class="text-muted">🌐 IP: {{ log.ip_address }}</small><br>
+        <small class="text-muted">🕐 {{ log.login_time|date:"d M Y, h:i A" }}</small>
+      </div>
+      <div>
+        {% if log.was_successful %}
+        <span class="badge bg-success">✅ Success</span>
+        {% else %}
+        <span class="badge bg-danger">❌ Blocked</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-info">No login history found.</div>
+{% endif %}
+
+<a href="{% url 'feed' %}" class="btn btn-outline-primary mt-2">Back to Feed</a>
+{% endblock %}

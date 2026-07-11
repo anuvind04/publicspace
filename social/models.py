@@ -144,3 +144,17 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.otp}"
+class LoginHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    browser = models.CharField(max_length=200, blank=True)
+    os = models.CharField(max_length=200, blank=True)
+    device_type = models.CharField(max_length=50, blank=True)
+    login_time = models.DateTimeField(auto_now_add=True)
+    was_successful = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.device_type} - {self.login_time}"
+
+    class Meta:
+        ordering = ['-login_time']

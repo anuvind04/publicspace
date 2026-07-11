@@ -4,6 +4,13 @@
 {% load i18n %}
 <div class="card p-4">
   <h4 class="mb-4 text-center">{% trans "Login" %}</h4>
+
+  {% if error %}
+  <div class="alert alert-danger text-center">
+    {{ error }}
+  </div>
+  {% endif %}
+
   <form method="POST">
     {% csrf_token %}
     {% for field in form %}

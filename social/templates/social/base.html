@@ -75,6 +75,7 @@
       </div>
       <a href="{% url 'create_post' %}" class="btn btn-primary btn-sm">{% trans "+ Post" %}</a>
       <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">{% trans "Logout" %}</a>
+      <a href="{% url 'login_history' %}" class="btn btn-outline-dark btn-sm">History</a>
     </div>
     {% else %}
     <div class="d-flex gap-2">
