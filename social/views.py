@@ -270,17 +270,19 @@ def forgot_password(request):
     if request.method == 'POST':
         identifier = request.POST.get('identifier')
         user = None
+
+        # Find by email
         user = User.objects.filter(email=identifier).first()
+
+        # Find by phone if email not found
         if not user:
-            try:
-                from .models import UserProfile
-                profile = UserProfile.objects.get(phone=identifier)
+            profile = UserProfile.objects.filter(phone=identifier).first()
+            if profile:
                 user = profile.user
-            except UserProfile.DoesNotExist:
+            else:
                 error = "No account found with that email or phone number."
 
         if user:
-            from .models import UserProfile
             profile, _ = UserProfile.objects.get_or_create(user=user)
             today = timezone.now().date()
             if profile.last_reset_request == today:
