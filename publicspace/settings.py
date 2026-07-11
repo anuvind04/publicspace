@@ -96,12 +96,14 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 
-RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID')
-RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET')
+import os
+
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_SnvNNZmiZubWHr')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'ZxjXGogeZEqMotnc1Vm03aHq')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'panuvind04@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'jldtgxphtixzbxvr')
