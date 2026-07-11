@@ -270,9 +270,8 @@ def forgot_password(request):
     if request.method == 'POST':
         identifier = request.POST.get('identifier')
         user = None
-        try:
-            user = User.objects.get(email=identifier)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=identifier).first()
+        if not user:
             try:
                 from .models import UserProfile
                 profile = UserProfile.objects.get(phone=identifier)
@@ -298,7 +297,6 @@ def forgot_password(request):
                 })
 
     return render(request, 'social/forgot_password.html', {'error': error})
-
 # ── Subscription Plans ──
 @login_required
 def plans(request):
